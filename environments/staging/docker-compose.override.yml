@@ -1,0 +1,21 @@
+services:
+  backend:
+    container_name: backend-staging
+    ports:
+      - "8083:8080"
+    env_file:
+      - ./environments/staging/.env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Staging
+    depends_on:
+      - db
+
+  db:
+    container_name: db-staging
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data_staging:/var/lib/postgresql/data
+
+volumes:
+  db_data_staging:

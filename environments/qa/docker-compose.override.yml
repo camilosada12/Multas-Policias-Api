@@ -1,0 +1,21 @@
+services:
+  backend:
+    container_name: backend-qa
+    ports:
+      - "8082:8080"
+    env_file:
+      - ./environments/qa/.env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=QA
+    depends_on:
+      - db
+
+  db:
+    container_name: db-qa
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data_qa:/var/lib/postgresql/data
+
+volumes:
+  db_data_qa:

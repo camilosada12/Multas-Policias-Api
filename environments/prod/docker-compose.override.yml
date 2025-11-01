@@ -1,0 +1,21 @@
+services:
+  backend:
+    container_name: backend-prod
+    ports:
+      - "8084:8080"
+    env_file:
+      - ./environments/prod/.env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      - db
+
+  db:
+    container_name: db-prod
+    ports:
+      - "5435:5432"
+    volumes:
+      - db_data_prod:/var/lib/postgresql/data
+
+volumes:
+  db_data_prod:
