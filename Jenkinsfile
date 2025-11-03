@@ -1,3 +1,10 @@
+/// <summary>
+/// Jenkinsfile principal para despliegue automatizado del proyecto MULTAS.
+/// Este pipeline detecta el entorno desde Back/.env,
+/// compila el proyecto .NET 9 y ejecuta el docker-compose correspondiente dentro de Back/environments/{entorno}.
+/// </summary>
+
+
 pipeline {
     agent any
 
