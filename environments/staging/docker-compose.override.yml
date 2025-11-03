@@ -1,21 +1,21 @@
+version: '3.8'
+
 services:
-  backend:
-    container_name: backend-staging
-    ports:
-      - "8083:8080"
+  multas-api-staging:
+    container_name: multas-api-staging
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: always
     env_file:
-      - ./environments/staging/.env
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Staging
-    depends_on:
-      - db
-
-  db:
-    container_name: db-staging
+      - .env
     ports:
-      - "5434:5432"
-    volumes:
-      - db_data_staging:/var/lib/postgresql/data
+      - "5102:8080"
+    networks:
+      - network_staging
+    labels:
+      - com.multas.environment=staging
 
-volumes:
-  db_data_staging:
+networks:
+  network_staging:
+    driver: bridge

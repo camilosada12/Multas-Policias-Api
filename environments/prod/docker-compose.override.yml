@@ -1,21 +1,21 @@
+version: '3.8'
+
 services:
-  backend:
-    container_name: backend-prod
-    ports:
-      - "8084:8080"
+  multas-api-prod:
+    container_name: multas-api-prod
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: always
     env_file:
-      - ./environments/prod/.env
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-    depends_on:
-      - db
-
-  db:
-    container_name: db-prod
+      - .env
     ports:
-      - "5435:5432"
-    volumes:
-      - db_data_prod:/var/lib/postgresql/data
+      - "5103:8080"
+    networks:
+      - network_prod
+    labels:
+      - com.multas.environment=prod
 
-volumes:
-  db_data_prod:
+networks:
+  network_prod:
+    driver: bridge

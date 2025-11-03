@@ -2,86 +2,76 @@ pipeline {
     agent any
 
     environment {
-        // solo si luego usas un registry (puedes comentar estas dos líneas)
-        REGISTRY = 'turegistrodocker.com'
-        IMAGE_NAME = 'miapp-backend'
+        DOTNET_CLI_HOME = 'C:\\jenkins\\.dotnet'
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
+        DOTNET_NOLOGO = '1'
     }
 
     stages {
-        stage('Preparar entorno') {
+
+        stage('Leer entorno desde .env') {
             steps {
-                script {
-                    // detectar entorno según la rama activa
-                    if (env.BRANCH_NAME == 'dev') {
-                        ENV_FOLDER = 'dev'
-                    } else if (env.BRANCH_NAME == 'qa') {
-                        ENV_FOLDER = 'qa'
-                    } else if (env.BRANCH_NAME == 'staging') {
-                        ENV_FOLDER = 'staging'
-                    } else if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'prod') {
-                        ENV_FOLDER = 'prod'
-                    } else {
-                        error("⚠️ La rama '${env.BRANCH_NAME}' no está configurada para despliegue automático.")
+                dir('Back') {
+                    script {
+                        // lee el valor de ASPNETCORE_ENVIRONMENT del archivo .env
+                        def envValue = powershell(
+                            script: "(Get-Content .env | Where-Object { \$_ -match '^ASPNETCORE_ENVIRONMENT=' }) -replace '^ASPNETCORE_ENVIRONMENT=', ''",
+                            returnStdout: true
+                        ).trim()
+
+                        if (!envValue) {
+                            error "❌ No se encontró ASPNETCORE_ENVIRONMENT en Back/.env"
+                        }
+
+                        env.ENVIRONMENT = envValue.toLowerCase()
+                        env.ENV_DIR = "Back/environments/${env.ENVIRONMENT}"
+                        env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.override.yml"
+                        env.ENV_FILE = "${env.ENV_DIR}/.env"
+
+                        echo "✅ Entorno detectado: ${env.ENVIRONMENT}"
+                        echo "📄 docker-compose: ${env.COMPOSE_FILE}"
+                        echo "📁 archivo .env: ${env.ENV_FILE}"
                     }
-
-                    echo "💡 Entorno detectado: ${ENV_FOLDER}"
                 }
             }
         }
 
-        stage('Construir imagen Docker') {
+        stage('Restaurar dependencias .NET') {
             steps {
-                script {
-                    echo "🚧 Construyendo contenedor para entorno ${ENV_FOLDER}..."
-                    sh """
-                        docker compose \
-                        -f docker-compose.yml \
-                        -f ./environments/${ENV_FOLDER}/docker-compose.override.yml \
-                        --env-file ./environments/${ENV_FOLDER}/.env \
-                        build
-                    """
+                dir('Back') {
+                    bat '''
+                        echo 🧩 Restaurando dependencias .NET...
+                        dotnet restore
+                    '''
                 }
             }
         }
 
-        // si no tienes registro de imágenes todavía, puedes comentar este bloque
-        stage('Subir imagen al registro') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'prod'
-                    branch 'staging'
-                    branch 'qa'
-                    branch 'dev'
-                }
-            }
+        stage('Compilar proyecto .NET') {
             steps {
-                script {
-                    echo "📦 (opcional) Publicando imagen en el registro..."
-                    sh """
-                        docker tag backend-${ENV_FOLDER} ${REGISTRY}/${IMAGE_NAME}:${ENV_FOLDER} || true
-                        docker push ${REGISTRY}/${IMAGE_NAME}:${ENV_FOLDER} || true
-                    """
+                dir('Back') {
+                    echo '⚙️ Compilando proyecto Multas-Policias-Api...'
+                    bat 'dotnet build --configuration Release'
                 }
             }
         }
 
-        stage('Desplegar contenedores') {
+        stage('Publicar y construir imagen Docker') {
             steps {
-                script {
-                    echo "🚀 Desplegando entorno '${ENV_FOLDER}'..."
-                    sh """
-                        docker compose \
-                        -f docker-compose.yml \
-                        -f ./environments/${ENV_FOLDER}/docker-compose.override.yml \
-                        --env-file ./environments/${ENV_FOLDER}/.env \
-                        down || true
+                dir('Back') {
+                    echo "🐳 Construyendo imagen Docker (${env.ENVIRONMENT})..."
+                    bat "docker build -t multas-api-${env.ENVIRONMENT}:latest -f Dockerfile ."
+                }
+            }
+        }
 
-                        docker compose \
-                        -f docker-compose.yml \
-                        -f ./environments/${ENV_FOLDER}/docker-compose.override.yml \
-                        --env-file ./environments/${ENV_FOLDER}/.env \
-                        up -d
+        stage('Desplegar API con Docker Compose') {
+            steps {
+                dir('Back') {
+                    echo "🚀 Desplegando API en entorno: ${env.ENVIRONMENT}"
+                    bat """
+                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
+                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
                     """
                 }
             }
@@ -89,20 +79,17 @@ pipeline {
 
         stage('Verificar estado de contenedores') {
             steps {
-                script {
-                    echo "🩺 Listando contenedores activos..."
-                    sh 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-                }
+                bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
             }
         }
     }
 
     post {
         success {
-            echo "✅ Despliegue completado correctamente para entorno ${ENV_FOLDER}."
+            echo "🎉 Despliegue completado correctamente para ${env.ENVIRONMENT}"
         }
         failure {
-            echo "❌ Error durante el pipeline. Revisa los logs en Jenkins."
+            echo "💥 Error durante el despliegue en ${env.ENVIRONMENT}"
         }
     }
 }
