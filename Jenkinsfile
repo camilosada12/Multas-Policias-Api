@@ -11,27 +11,25 @@ pipeline {
 
         stage('Leer entorno desde .env') {
             steps {
-                dir('Back') {
-                    script {
-                        // lee el valor de ASPNETCORE_ENVIRONMENT del archivo .env
-                        def envValue = powershell(
-                            script: "(Get-Content .env | Where-Object { \$_ -match '^ASPNETCORE_ENVIRONMENT=' }) -replace '^ASPNETCORE_ENVIRONMENT=', ''",
-                            returnStdout: true
-                        ).trim()
+                script {
+                    // lee el valor de ASPNETCORE_ENVIRONMENT del archivo .env (ubicado en la raíz)
+                    def envValue = powershell(
+                        script: "(Get-Content .env | Where-Object { \$_ -match '^ASPNETCORE_ENVIRONMENT=' }) -replace '^ASPNETCORE_ENVIRONMENT=', ''",
+                        returnStdout: true
+                    ).trim()
 
-                        if (!envValue) {
-                            error "❌ No se encontró ASPNETCORE_ENVIRONMENT en Back/.env"
-                        }
-
-                        env.ENVIRONMENT = envValue.toLowerCase()
-                        env.ENV_DIR = "Back/environments/${env.ENVIRONMENT}"
-                        env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.override.yml"
-                        env.ENV_FILE = "${env.ENV_DIR}/.env"
-
-                        echo "✅ Entorno detectado: ${env.ENVIRONMENT}"
-                        echo "📄 docker-compose: ${env.COMPOSE_FILE}"
-                        echo "📁 archivo .env: ${env.ENV_FILE}"
+                    if (!envValue) {
+                        error "❌ No se encontró ASPNETCORE_ENVIRONMENT en .env"
                     }
+
+                    env.ENVIRONMENT = envValue.toLowerCase()
+                    env.ENV_DIR = "environments/${env.ENVIRONMENT}"
+                    env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.override.yml"
+                    env.ENV_FILE = "${env.ENV_DIR}/.env"
+
+                    echo "✅ Entorno detectado: ${env.ENVIRONMENT}"
+                    echo "📄 docker-compose: ${env.COMPOSE_FILE}"
+                    echo "📁 archivo .env: ${env.ENV_FILE}"
                 }
             }
         }
@@ -67,13 +65,11 @@ pipeline {
 
         stage('Desplegar API con Docker Compose') {
             steps {
-                dir('Back') {
-                    echo "🚀 Desplegando API en entorno: ${env.ENVIRONMENT}"
-                    bat """
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                    """
-                }
+                echo "🚀 Desplegando API en entorno: ${env.ENVIRONMENT}"
+                bat """
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                """
             }
         }
 
