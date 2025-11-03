@@ -9,17 +9,17 @@ pipeline {
 
     stages {
 
-        stage('Leer entorno desde .env') {
+        stage('leer entorno desde .env') {
             steps {
                 script {
-                    // lee el valor de ENVIRONMENT desde el archivo .env en la raíz del proyecto
+                    // lee ENVIRONMENT desde .env en la raíz del repo
                     def envValue = powershell(
                         script: "(Get-Content .env | Where-Object { \$_ -match '^ENVIRONMENT=' }) -replace '^ENVIRONMENT=', ''",
                         returnStdout: true
                     ).trim()
 
                     if (!envValue) {
-                        error "❌ No se encontró ENVIRONMENT en el archivo .env raíz"
+                        error "❌ no se encontró ENVIRONMENT en el archivo .env raíz"
                     }
 
                     env.ENVIRONMENT = envValue.toLowerCase()
@@ -27,46 +27,47 @@ pipeline {
                     env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.override.yml"
                     env.ENV_FILE = "${env.ENV_DIR}/.env"
 
-                    echo "✅ Entorno detectado: ${env.ENVIRONMENT}"
+                    echo "✅ entorno detectado: ${env.ENVIRONMENT}"
                     echo "📄 docker-compose: ${env.COMPOSE_FILE}"
                     echo "📁 archivo .env: ${env.ENV_FILE}"
                 }
             }
         }
 
-        stage('Restaurar dependencias .NET') {
+        stage('restaurar dependencias .net') {
             steps {
                 dir('Back') {
                     bat '''
-                        echo 🧩 Restaurando dependencias .NET...
-                        dotnet restore
+                        echo 🧩 restaurando dependencias .net...
+                        dotnet restore Web\\Web.csproj
                     '''
                 }
             }
         }
 
-        stage('Compilar proyecto .NET') {
+        stage('compilar proyecto .net') {
             steps {
                 dir('Back') {
-                    echo '⚙️ Compilando proyecto Multas-Policias-Api...'
-                    bat 'dotnet build --configuration Release'
+                    echo '⚙️ compilando proyecto web (web.csproj)...'
+                    bat 'dotnet build Web\\Web.csproj --configuration Release'
                 }
             }
         }
 
-        stage('Publicar y construir imagen Docker') {
+        stage('publicar y construir imagen docker') {
             steps {
                 dir('Back') {
-                    echo "🐳 Construyendo imagen Docker (${env.ENVIRONMENT})..."
+                    echo "🐳 construyendo imagen docker (multas-api-${env.ENVIRONMENT})..."
+                    // construimos con contexto back (donde está Dockerfile)
                     bat "docker build -t multas-api-${env.ENVIRONMENT}:latest -f Dockerfile ."
                 }
             }
         }
 
-        stage('Desplegar API con Docker Compose') {
+        stage('desplegar api con docker compose') {
             steps {
                 dir('Back') {
-                    echo "🚀 Desplegando API en entorno: ${env.ENVIRONMENT}"
+                    echo "🚀 desplegando api en entorno: ${env.ENVIRONMENT}"
                     bat """
                         docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
                         docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
@@ -75,19 +76,21 @@ pipeline {
             }
         }
 
-        stage('Verificar estado de contenedores') {
+        stage('verificar estado de contenedores') {
             steps {
-                bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+                dir('Back') {
+                    bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+                }
             }
         }
     }
 
     post {
         success {
-            echo "🎉 Despliegue completado correctamente para ${env.ENVIRONMENT}"
+            echo "🎉 despliegue completado correctamente para ${env.ENVIRONMENT}"
         }
         failure {
-            echo "💥 Error durante el despliegue en ${env.ENVIRONMENT}"
+            echo "💥 error durante el despliegue en ${env.ENVIRONMENT}"
         }
     }
 }
