@@ -1,10 +1,3 @@
-/// <summary>
-/// Jenkinsfile principal para despliegue automatizado del proyecto MULTAS.
-/// Este pipeline detecta el entorno desde Back/.env,
-/// compila el proyecto .NET 9 y ejecuta el docker-compose correspondiente dentro de Back/environments/{entorno}.
-/// </summary>
-
-
 pipeline {
     agent any
 
@@ -15,11 +8,9 @@ pipeline {
     }
 
     stages {
-
         stage('leer entorno desde .env') {
             steps {
                 script {
-                    // lee ENVIRONMENT del .env raíz del repo
                     def envValue = powershell(
                         script: "(Get-Content .env | Where-Object { \$_ -match '^ENVIRONMENT=' }) -replace '^ENVIRONMENT=', ''",
                         returnStdout: true
@@ -44,10 +35,7 @@ pipeline {
         stage('restaurar dependencias .net 8') {
             steps {
                 dir('Web') {
-                    bat '''
-                        echo 🧩 restaurando dependencias .net 8...
-                        dotnet restore
-                    '''
+                    bat 'dotnet restore'
                 }
             }
         }
@@ -55,7 +43,6 @@ pipeline {
         stage('compilar proyecto .net 8') {
             steps {
                 dir('Web') {
-                    echo '⚙️ compilando proyecto .net 8...'
                     bat 'dotnet build --configuration Release'
                 }
             }
@@ -63,13 +50,11 @@ pipeline {
 
         stage('desplegar con docker compose') {
             steps {
-                dir('Web') {
-                    echo "🚀 desplegando entorno ${env.ENVIRONMENT}..."
-                    bat """
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                    """
-                }
+                echo "🚀 desplegando entorno ${env.ENVIRONMENT}..."
+                bat """
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                """
             }
         }
 
@@ -81,11 +66,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo "🎉 despliegue exitoso en ${env.ENVIRONMENT}"
-        }
-        failure {
-            echo "💥 error durante el despliegue en ${env.ENVIRONMENT}"
-        }
+        success { echo "🎉 despliegue exitoso en ${env.ENVIRONMENT}" }
+        failure { echo "💥 error durante el despliegue en ${env.ENVIRONMENT}" }
     }
 }
