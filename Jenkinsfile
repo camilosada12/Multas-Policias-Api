@@ -12,7 +12,7 @@ pipeline {
         stage('leer entorno desde .env') {
             steps {
                 script {
-                    // lee ENVIRONMENT desde .env en la raíz del repo
+                    // lee ENVIRONMENT desde el archivo .env raíz
                     def envValue = powershell(
                         script: "(Get-Content .env | Where-Object { \$_ -match '^ENVIRONMENT=' }) -replace '^ENVIRONMENT=', ''",
                         returnStdout: true
@@ -36,10 +36,10 @@ pipeline {
 
         stage('restaurar dependencias .net') {
             steps {
-                dir('Back') {
+                dir('Back/Web') {
                     bat '''
                         echo 🧩 restaurando dependencias .net...
-                        dotnet restore Web\\Web.csproj
+                        dotnet restore Web.csproj
                     '''
                 }
             }
@@ -47,9 +47,9 @@ pipeline {
 
         stage('compilar proyecto .net') {
             steps {
-                dir('Back') {
-                    echo '⚙️ compilando proyecto web (web.csproj)...'
-                    bat 'dotnet build Web\\Web.csproj --configuration Release'
+                dir('Back/Web') {
+                    echo '⚙️ compilando proyecto web (Web.csproj)...'
+                    bat 'dotnet build Web.csproj --configuration Release'
                 }
             }
         }
@@ -57,9 +57,8 @@ pipeline {
         stage('publicar y construir imagen docker') {
             steps {
                 dir('Back') {
-                    echo "🐳 construyendo imagen docker (multas-api-${env.ENVIRONMENT})..."
-                    // construimos con contexto back (donde está Dockerfile)
-                    bat "docker build -t multas-api-${env.ENVIRONMENT}:latest -f Dockerfile ."
+                    echo "🐳 construyendo imagen docker (web-api-${env.ENVIRONMENT})..."
+                    bat "docker build -t web-api-${env.ENVIRONMENT}:latest -f Dockerfile ."
                 }
             }
         }
