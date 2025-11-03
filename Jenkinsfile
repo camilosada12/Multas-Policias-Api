@@ -10,76 +10,57 @@ pipeline {
     }
 
     stages {
-
-        stage('Leer entorno desde .env') {
+        stage('leer entorno desde .env') {
             steps {
-                dir('Back') {
-                    script {
-                        // lee el valor de ASPNETCORE_ENVIRONMENT del archivo .env
-                        def envValue = powershell(
-                            script: "(Get-Content .env | Where-Object { \$_ -match '^ASPNETCORE_ENVIRONMENT=' }) -replace '^ASPNETCORE_ENVIRONMENT=', ''",
-                            returnStdout: true
-                        ).trim()
+                script {
+                    def envValue = powershell(
+                        script: "(Get-Content .env | Where-Object { \$_ -match '^ENVIRONMENT=' }) -replace '^ENVIRONMENT=', ''",
+                        returnStdout: true
+                    ).trim()
 
-                        if (!envValue) {
-                            error "❌ No se encontró ASPNETCORE_ENVIRONMENT en Back/.env"
-                        }
-
-                        env.ENVIRONMENT = envValue.toLowerCase()
-                        env.ENV_DIR = "Back/environments/${env.ENVIRONMENT}"
-                        env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.override.yml"
-                        env.ENV_FILE = "${env.ENV_DIR}/.env"
-
-                        echo "✅ Entorno detectado: ${env.ENVIRONMENT}"
-                        echo "📄 docker-compose: ${env.COMPOSE_FILE}"
-                        echo "📁 archivo .env: ${env.ENV_FILE}"
+                    if (!envValue) {
+                        error "❌ no se encontró ENVIRONMENT en el archivo .env raíz"
                     }
+
+                    env.ENVIRONMENT = envValue.toLowerCase()
+                    env.ENV_DIR = "environments/${env.ENVIRONMENT}"
+                    env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
+                    env.ENV_FILE = "${env.ENV_DIR}/.env"
+
+                    echo "✅ entorno detectado: ${env.ENVIRONMENT}"
+                    echo "📄 docker-compose: ${env.COMPOSE_FILE}"
+                    echo "📁 archivo .env: ${env.ENV_FILE}"
                 }
             }
         }
 
-        stage('Restaurar dependencias .NET') {
+        stage('restaurar dependencias .net 8') {
             steps {
-                dir('Back') {
-                    bat '''
-                        echo 🧩 Restaurando dependencias .NET...
-                        dotnet restore
-                    '''
+                dir('Web') {
+                    bat 'dotnet restore'
                 }
             }
         }
 
-        stage('Compilar proyecto .NET') {
+        stage('compilar proyecto .net 8') {
             steps {
-                dir('Back') {
-                    echo '⚙️ Compilando proyecto Multas-Policias-Api...'
+                dir('Web') {
                     bat 'dotnet build --configuration Release'
                 }
             }
         }
 
-        stage('Publicar y construir imagen Docker') {
+        stage('desplegar con docker compose') {
             steps {
-                dir('Back') {
-                    echo "🐳 Construyendo imagen Docker (${env.ENVIRONMENT})..."
-                    bat "docker build -t multas-api-${env.ENVIRONMENT}:latest -f Dockerfile ."
-                }
+                echo "🚀 desplegando entorno ${env.ENVIRONMENT}..."
+                bat """
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                """
             }
         }
 
-        stage('Desplegar API con Docker Compose') {
-            steps {
-                dir('Back') {
-                    echo "🚀 Desplegando API en entorno: ${env.ENVIRONMENT}"
-                    bat """
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                    """
-                }
-            }
-        }
-
-        stage('Verificar estado de contenedores') {
+        stage('verificar contenedores activos') {
             steps {
                 bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
             }
@@ -87,11 +68,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo "🎉 Despliegue completado correctamente para ${env.ENVIRONMENT}"
-        }
-        failure {
-            echo "💥 Error durante el despliegue en ${env.ENVIRONMENT}"
-        }
+        success { echo "🎉 despliegue exitoso en ${env.ENVIRONMENT}" }
+        failure { echo "💥 error durante el despliegue en ${env.ENVIRONMENT}" }
     }
 }

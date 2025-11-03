@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgresBack-qa:
+    image: postgres:16
+    container_name: postgresBack-qa
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data_qa:/var/lib/postgresql/data
+    networks:
+      - network_qa
+
+  multas-api-qa:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    container_name: multas-api-qa
+    restart: always
+    depends_on:
+      - postgresBack-qa
+    env_file:
+      - .env
+    ports:
+      - "5101:8080"
+    networks:
+      - network_qa
+    labels:
+      - com.multas.environment=qa
+
+volumes:
+  postgres_data_qa:
+
+networks:
+  network_qa:
+    driver: bridge
