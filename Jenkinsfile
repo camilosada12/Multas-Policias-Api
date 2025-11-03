@@ -23,7 +23,7 @@ pipeline {
                     }
 
                     env.ENVIRONMENT = envValue.toLowerCase()
-                    env.ENV_DIR = "Back/environments/${env.ENVIRONMENT}"
+                    env.ENV_DIR = "environments/${env.ENVIRONMENT}"
                     env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
                     env.ENV_FILE = "${env.ENV_DIR}/.env"
 
@@ -36,7 +36,7 @@ pipeline {
 
         stage('restaurar dependencias .net 8') {
             steps {
-                dir('Back') {
+                dir('Web') {
                     bat '''
                         echo 🧩 restaurando dependencias .net 8...
                         dotnet restore
@@ -47,7 +47,7 @@ pipeline {
 
         stage('compilar proyecto .net 8') {
             steps {
-                dir('Back') {
+                dir('Web') {
                     echo '⚙️ compilando proyecto .net 8...'
                     bat 'dotnet build --configuration Release'
                 }
@@ -56,7 +56,7 @@ pipeline {
 
         stage('desplegar con docker compose') {
             steps {
-                dir('Back') {
+                dir('Web') {
                     echo "🚀 desplegando entorno ${env.ENVIRONMENT}..."
                     bat """
                         docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
