@@ -1,12 +1,27 @@
 version: '3.8'
 
 services:
-  multas-api-dev:
-    container_name: multas-api-dev
-    build:
-      context: ../..
-      dockerfile: Dockerfile
+  postgresBack-dev:
+    image: postgres:16
+    container_name: postgresBack-dev
     restart: always
+    env_file:
+      - .env
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - network_dev
+
+  multas-api-dev:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    container_name: multas-api-dev
+    restart: always
+    depends_on:
+      - postgresBack-dev
     env_file:
       - .env
     ports:
@@ -15,6 +30,9 @@ services:
       - network_dev
     labels:
       - com.multas.environment=dev
+
+volumes:
+  postgres_data_dev:
 
 networks:
   network_dev:

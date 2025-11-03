@@ -1,12 +1,27 @@
 version: '3.8'
 
 services:
-  multas-api-staging:
-    container_name: multas-api-staging
-    build:
-      context: ../..
-      dockerfile: Dockerfile
+  postgresBack-staging:
+    image: postgres:16
+    container_name: postgresBack-staging
     restart: always
+    env_file:
+      - .env
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+    networks:
+      - network_staging
+
+  multas-api-staging:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    container_name: multas-api-staging
+    restart: always
+    depends_on:
+      - postgresBack-staging
     env_file:
       - .env
     ports:
@@ -15,6 +30,9 @@ services:
       - network_staging
     labels:
       - com.multas.environment=staging
+
+volumes:
+  postgres_data_staging:
 
 networks:
   network_staging:
