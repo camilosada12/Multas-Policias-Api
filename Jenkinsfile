@@ -72,16 +72,16 @@ pipeline {
 
         // =======================================================
         // 4️⃣ Preparar red y levantar base de datos
-        // =======================================================
-       stage('Levantar base de datos') {
+      stage('Levantar contenedores') {
             steps {
-                echo "🗄️ Levantando red y contenedor de base de datos..."
+                echo "🗄️ Levantando red y contenedores para ${env.ENVIRONMENT}..."
                 bat """
                     docker network create multas_network || echo "🔹 Red multas_network ya existe"
-                    docker compose -f DB/docker-compose.yml --env-file ${env.ENV_FILE} up -d
+                    docker compose -f DB/docker-compose.yml -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
                 """
             }
         }
+
         // =======================================================
         // 5️⃣ Desplegar API
         // =======================================================
