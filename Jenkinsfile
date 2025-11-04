@@ -73,12 +73,12 @@ pipeline {
         // =======================================================
         // 4️⃣ Preparar red y levantar base de datos
         // =======================================================
-        stage('Levantar base de datos') {
+       stage('Levantar base de datos') {
             steps {
                 echo "🗄️ Levantando red y contenedor de base de datos..."
                 bat """
                     docker network create multas_network || echo "🔹 Red multas_network ya existe"
-                    docker compose -f ${env.DB_COMPOSE_FILE} up -d
+                    docker compose -f ${env.DB_COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d
                 """
             }
         }
