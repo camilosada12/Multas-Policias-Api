@@ -1,7 +1,6 @@
 version: "3.9"
 
 services:
-  # SQL Server - DEV
   sqlserverBack-dev:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-dev
@@ -17,7 +16,6 @@ services:
     networks:
       - multas_network
 
-  # SQL Server - QA
   sqlserverBack-qa:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-qa
@@ -33,7 +31,6 @@ services:
     networks:
       - multas_network
 
-  # SQL Server - STAGING
   sqlserverBack-staging:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-staging
@@ -49,7 +46,6 @@ services:
     networks:
       - multas_network
 
-  # SQL Server - PROD
   sqlserverBack-prod:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-prod
@@ -74,4 +70,3 @@ volumes:
 networks:
   multas_network:
     external: true
-
