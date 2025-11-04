@@ -78,11 +78,10 @@ pipeline {
                 echo "🗄️ Levantando red y contenedor de base de datos..."
                 bat """
                     docker network create multas_network || echo "🔹 Red multas_network ya existe"
-                    docker compose -f ${env.DB_COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d
+                    docker compose -f DB/docker-compose.yml --env-file ${env.ENV_FILE} up -d
                 """
             }
         }
-
         // =======================================================
         // 5️⃣ Desplegar API
         // =======================================================

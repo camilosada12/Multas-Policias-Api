@@ -81,6 +81,5 @@ volumes:
 
 networks:
   multas_network:
-    name: multas_network
-    driver: bridge
-    external: false
+    external: true
+
