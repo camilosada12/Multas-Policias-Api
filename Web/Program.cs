@@ -64,7 +64,10 @@ app.MapHub<Web.Hubs.InfractionHub>("/infractionHub");
 app.UseStaticFiles();
 
 // Swagger (en Dev/Prod según tu lógica)
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+if (app.Environment.IsDevelopment()
+    || app.Environment.IsProduction()
+    || app.Environment.IsStaging()
+    || app.Environment.IsEnvironment("QA"))
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -73,6 +76,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
         c.RoutePrefix = "swagger";
     });
 }
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 
