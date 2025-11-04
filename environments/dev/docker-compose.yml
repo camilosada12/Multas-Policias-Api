@@ -5,8 +5,6 @@ services:
       context: ../../
       dockerfile: Dockerfile
     restart: always
-    depends_on:
-      - sqlserverBack-dev
     env_file:
       - .env
     ports:

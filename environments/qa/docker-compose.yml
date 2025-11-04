@@ -5,8 +5,6 @@ services:
       dockerfile: Dockerfile
     container_name: multas-api-qa
     restart: always
-    depends_on:
-      - sqlserverBack-qa
     env_file:
       - .env
     ports:
