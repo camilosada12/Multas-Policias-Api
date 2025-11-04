@@ -8,74 +8,72 @@ pipeline {
     }
 
     stages {
-        stage('Detectar entorno modificado') {
+        stage('Detectar entorno por rama') {
             steps {
                 script {
-                    echo "🔍 Detectando entorno modificado en el commit..."
+                    echo "🔍 Detectando entorno según la rama..."
+                    def branch = env.BRANCH_NAME?.toLowerCase() ?: "develop"
 
-                    // Detectar archivos cambiados desde el último commit en main
-                    def changedFiles = bat(
-                        script: 'git diff --name-only HEAD~1 HEAD',
-                        returnStdout: true
-                    ).trim().split('\n')
-
-                    def envChanged = ""
-                    if (changedFiles.any { it.startsWith('environments/dev/') }) {
-                        envChanged = "dev"
-                    } else if (changedFiles.any { it.startsWith('environments/qa/') }) {
-                        envChanged = "qa"
-                    } else if (changedFiles.any { it.startsWith('environments/staging/') }) {
-                        envChanged = "staging"
-                    } else if (changedFiles.any { it.startsWith('environments/prod/') }) {
-                        envChanged = "prod"
+                    switch (branch) {
+                        case 'main':
+                            env.ENVIRONMENT = 'prod'
+                            break
+                        case 'qa':
+                            env.ENVIRONMENT = 'qa'
+                            break
+                        case 'staging':
+                            env.ENVIRONMENT = 'staging'
+                            break
+                        default:
+                            env.ENVIRONMENT = 'dev'
+                            break
                     }
 
-                    if (envChanged == "") {
-                        echo "⚠️ No se detectó ningún entorno modificado — no se desplegará nada."
-                        currentBuild.result = 'SUCCESS'
-                        return
-                    }
-
-                    env.ENVIRONMENT = envChanged
-                    env.ENV_DIR = "environments/${envChanged}"
+                    env.ENV_DIR = "environments/${env.ENVIRONMENT}"
                     env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
                     env.ENV_FILE = "${env.ENV_DIR}/.env"
 
-                    echo "✅ Se detectó cambio en el entorno: ${env.ENVIRONMENT}"
+                    echo "✅ Rama detectada: ${branch}"
+                    echo "📦 Entorno asignado: ${env.ENVIRONMENT}"
+                    echo "📄 docker-compose: ${env.COMPOSE_FILE}"
+                    echo "📁 archivo .env: ${env.ENV_FILE}"
                 }
             }
         }
 
         stage('Restaurar dependencias .NET 8') {
-            when { expression { env.ENVIRONMENT != null } }
             steps {
                 dir('Web') {
+                    echo "📦 Restaurando dependencias..."
                     bat 'dotnet restore'
                 }
             }
         }
 
         stage('Compilar proyecto .NET 8') {
-            when { expression { env.ENVIRONMENT != null } }
             steps {
                 dir('Web') {
+                    echo "⚙️ Compilando proyecto..."
                     bat 'dotnet build --configuration Release'
                 }
             }
         }
 
-        stage('Desplegar entorno modificado') {
-            when { expression { env.ENVIRONMENT != null } }
+        stage('Desplegar entorno') {
             steps {
-                echo "🚀 Desplegando entorno ${env.ENVIRONMENT}..."
-                bat """
-                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                """
+                script {
+                    echo "🚀 Desplegando entorno ${env.ENVIRONMENT}..."
+                    bat """
+                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
+                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                    """
+                }
             }
         }
 
         stage('Verificar contenedores activos') {
             steps {
+                echo "🐳 Contenedores activos actualmente:"
                 bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
             }
         }
@@ -83,10 +81,10 @@ pipeline {
 
     post {
         success {
-            echo "🎉 despliegue exitoso (${env.ENVIRONMENT ?: 'ninguno'})"
+            echo "🎉 despliegue exitoso en ${env.ENVIRONMENT}"
         }
         failure {
-            echo "💥 error durante el despliegue (${env.ENVIRONMENT ?: 'indeterminado'})"
+            echo "💥 error durante el despliegue en ${env.ENVIRONMENT}"
         }
     }
 }
