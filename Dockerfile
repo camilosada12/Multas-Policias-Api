@@ -29,22 +29,31 @@ COPY . .
 # Compilar y publicar el proyecto principal en modo Release
 RUN dotnet publish Web/Web.csproj -c Release -o /app/publish /p:UseAppHost=false
 
+
 # ---------- runtime stage ----------
 FROM ubuntu:22.04 AS final
 
-# Instalar solo el runtime de .NET 8.0
-RUN apt-get update && apt-get install -y wget apt-transport-https software-properties-common \
-    && wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    && dpkg -i packages-microsoft-prod.deb \
-    && apt-get update && apt-get install -y aspnetcore-runtime-8.0
+# Instalar runtime de .NET 8.0 y configurar zona horaria
+RUN apt-get update && \
+    apt-get install -y wget apt-transport-https software-properties-common tzdata && \
+    ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata && \
+    wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    apt-get update && apt-get install -y aspnetcore-runtime-8.0 && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-ENV ASPNETCORE_URLS=http://+:8080 DOTNET_RUNNING_IN_CONTAINER=true
+
+# Variables de entorno
+ENV ASPNETCORE_URLS=http://+:8080 \
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    TZ=America/Bogota
 
 # Copiar los archivos publicados desde la fase anterior
 COPY --from=build /app/publish .
 
-# Exponer el puerto para el contenedor
+# Exponer el puerto del contenedor
 EXPOSE 8080
 
 # Punto de entrada

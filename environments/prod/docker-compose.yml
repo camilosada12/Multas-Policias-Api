@@ -1,16 +1,19 @@
 version: '3.8'
 
 services:
-  postgresBack-prod:
-    image: postgres:16
-    container_name: postgresBack-prod
+  sqlserverBack-prod:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverBack-prod
     restart: always
     env_file:
       - .env
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SQLSERVER_PASSWORD}
     ports:
-      - "5437:5432"
+      - "1437:1433"
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      - sqlserver_data_prod:/var/opt/mssql
     networks:
       - network_prod
 
@@ -21,7 +24,7 @@ services:
     container_name: multas-api-prod
     restart: always
     depends_on:
-      - postgresBack-prod
+      - sqlserverBack-prod
     env_file:
       - .env
     ports:
@@ -32,7 +35,7 @@ services:
       - com.multas.environment=prod
 
 volumes:
-  postgres_data_prod:
+  sqlserver_data_prod:
 
 networks:
   network_prod:

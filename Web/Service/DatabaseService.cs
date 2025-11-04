@@ -13,7 +13,8 @@ namespace Web.Service
             var my = config.GetConnectionString("MySql");
 
             // Registrar AuditManager si lo usas en ApplicationDbContext
-            //services.AddScoped<AuditService>();
+            // services.AddScoped<AuditService>();
+
             if (!string.IsNullOrWhiteSpace(sql))
             {
                 services.AddDbContext<ApplicationDbContext>(opt =>
@@ -22,7 +23,8 @@ namespace Web.Service
                         s.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                         s.EnableRetryOnFailure();
                         s.CommandTimeout(60);
-                    }));
+                    })
+                );
             }
 
             if (!string.IsNullOrWhiteSpace(pg))
@@ -33,7 +35,8 @@ namespace Web.Service
                         n.MigrationsAssembly(typeof(PostgresDbContext).Assembly.FullName);
                         n.EnableRetryOnFailure();
                         n.CommandTimeout(60);
-                    }));
+                    })
+                );
             }
 
             if (!string.IsNullOrWhiteSpace(my))
@@ -46,9 +49,9 @@ namespace Web.Service
                         // 👇 Ignorar schemas (MySQL no soporta schemas)
                         m.SchemaBehavior(MySqlSchemaBehavior.Ignore);
 
-            // Registrar AuditDbContext si es necesario, con proveedor fijo o dinámico
-            //services.AddDbContext<AuditDbContext>(options =>
-            // options.UseSqlServer(configuration.GetConnectionString("Audit")));
+                        // Registrar AuditDbContext si es necesario, con proveedor fijo o dinámico
+                        // services.AddDbContext<AuditDbContext>(options =>
+                        //     options.UseSqlServer(configuration.GetConnectionString("Audit")));
 
                         // Habilitar traducciones de comparación de strings
                         m.EnableStringComparisonTranslations();
