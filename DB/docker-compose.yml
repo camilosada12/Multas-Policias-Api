@@ -6,8 +6,6 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-dev
     restart: always
-    env_file:
-      - ../environments/dev/.env      # apunta al archivo .env donde está SQLSERVER_PASSWORD y SQLSERVER_DB
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -24,8 +22,6 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-qa
     restart: always
-    env_file:
-      - ../environments/qa/.env
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -42,8 +38,6 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-staging
     restart: always
-    env_file:
-      - ../environments/staging/.env
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -60,8 +54,6 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-prod
     restart: always
-    env_file:
-      - ../environments/prod/.env
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}

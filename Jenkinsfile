@@ -75,10 +75,10 @@ pipeline {
       stage('Levantar contenedores') {
             steps {
                 echo "🗄️ Levantando red y contenedores para ${env.ENVIRONMENT}..."
-                bat """
+               bat """
                     docker network create multas_network || echo "🔹 Red multas_network ya existe"
                     docker compose -f DB/docker-compose.yml -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                """
+                    """
             }
         }
 
