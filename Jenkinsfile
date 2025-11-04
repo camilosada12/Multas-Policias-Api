@@ -8,9 +8,6 @@ pipeline {
     }
 
     stages {
-        // ===============================
-        // 1️⃣ Detectar entorno por rama
-        // ===============================
         stage('Detectar entorno por rama') {
             steps {
                 script {
