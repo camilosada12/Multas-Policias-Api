@@ -8,8 +8,6 @@ pipeline {
     }
 
     stages {
-
-        // 1️⃣ Detectar entorno desde Api/.env
         stage('Leer entorno desde Api/.env') {
             steps {
                 dir('Web') {  // carpeta donde está tu API
