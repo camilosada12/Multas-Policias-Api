@@ -1,6 +1,6 @@
 ﻿using Entity.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure; // 👈 importante
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace Web.Service
 {
@@ -8,11 +8,11 @@ namespace Web.Service
     {
         public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration config)
         {
+            var sql = config.GetConnectionString("SqlServer");
             var pg = config.GetConnectionString("Postgres");
+            var my = config.GetConnectionString("MySql");
 
-            // Registrar AuditManager si lo usas en ApplicationDbContext
-            // services.AddScoped<AuditService>();
-
+            // 🟢 PostgreSQL es la base de datos principal
             if (!string.IsNullOrWhiteSpace(pg))
             {
                 services.AddDbContext<PostgresDbContext>(opt =>
@@ -22,6 +22,34 @@ namespace Web.Service
                         n.EnableRetryOnFailure();
                         n.CommandTimeout(60);
                     })
+                );
+            }
+
+            // 🔸 (Opcional) SQL Server
+            if (!string.IsNullOrWhiteSpace(sql))
+            {
+                services.AddDbContext<ApplicationDbContext>(opt =>
+                    opt.UseSqlServer(sql, s =>
+                    {
+                        s.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                        s.EnableRetryOnFailure();
+                        s.CommandTimeout(60);
+                    })
+                );
+            }
+
+            // 🔸 (Opcional) MySQL
+            if (!string.IsNullOrWhiteSpace(my))
+            {
+                services.AddDbContext<MySqlApplicationDbContext>(opt =>
+                    opt.UseMySql(my, ServerVersion.AutoDetect(my), m =>
+                    {
+                        m.MigrationsAssembly(typeof(MySqlApplicationDbContext).Assembly.FullName);
+                        m.SchemaBehavior(MySqlSchemaBehavior.Ignore);
+                        m.EnableStringComparisonTranslations();
+                    })
+                    .EnableDetailedErrors()
+                    .EnableSensitiveDataLogging() // ⚠️ solo en desarrollo
                 );
             }
 

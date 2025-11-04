@@ -23,6 +23,15 @@ namespace Web.Service
                 {
                     switch (t)
                     {
+                        case "sqlserver":
+                            {
+                                var ctx = sp.GetService<ApplicationDbContext>();
+                                if (ctx == null) { log.LogWarning("SQL Server no configurado: se omite."); break; }
+                                log.LogInformation("➡️ Migrando SQL Server...");
+                                 ctx.Database.Migrate();
+                                log.LogInformation("✅ Migración completada para SqlServer");
+                                break;
+                            }
                         case "postgres":
                             {
                                 var ctx = sp.GetService<PostgresDbContext>();
@@ -30,6 +39,15 @@ namespace Web.Service
                                 log.LogInformation("➡️ Migrando PostgreSQL...");
                                 ctx.Database.Migrate();
                                 log.LogInformation("✅ Migración completada para Postgres");
+                                break;
+                            }
+                        case "mysql":
+                            {
+                                var ctx = sp.GetService<MySqlApplicationDbContext>();
+                                if (ctx == null) { log.LogWarning("MySQL no configurado: se omite."); break; }
+                                log.LogInformation("➡️ Migrando MySQL...");
+                                ctx.Database.Migrate();
+                                log.LogInformation("✅ Migración completada para MySql");
                                 break;
                             }
                         default:
