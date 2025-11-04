@@ -1,10 +1,13 @@
+version: "3.9"
+
 services:
+  # SQL Server - DEV
   sqlserverBack-dev:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-dev
     restart: always
     env_file:
-      - ./../environments/dev/.env    # relativa a DB/docker-compose.yml
+      - ../environments/dev/.env      # apunta al archivo .env donde está SQLSERVER_PASSWORD y SQLSERVER_DB
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -16,12 +19,13 @@ services:
     networks:
       - multas_network
 
+  # SQL Server - QA
   sqlserverBack-qa:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-qa
     restart: always
     env_file:
-      - ./../environments/qa/.env
+      - ../environments/qa/.env
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -33,12 +37,13 @@ services:
     networks:
       - multas_network
 
+  # SQL Server - STAGING
   sqlserverBack-staging:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-staging
     restart: always
     env_file:
-      - ./../environments/staging/.env
+      - ../environments/staging/.env
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -50,12 +55,13 @@ services:
     networks:
       - multas_network
 
+  # SQL Server - PROD
   sqlserverBack-prod:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverBack-prod
     restart: always
     env_file:
-      - ./../environments/prod/.env
+      - ../environments/prod/.env
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SQLSERVER_PASSWORD}
@@ -75,4 +81,6 @@ volumes:
 
 networks:
   multas_network:
-    external: true
+    name: multas_network
+    driver: bridge
+    external: false

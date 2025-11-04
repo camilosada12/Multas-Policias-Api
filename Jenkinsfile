@@ -8,85 +8,85 @@ pipeline {
     }
 
     stages {
-        stage('Detectar entorno por rama') {
-            steps {
-                script {
-                    echo "🔍 Detectando entorno según la rama..."
-                    def branch = env.BRANCH_NAME?.toLowerCase() ?: "develop"
 
-                    switch (branch) {
-                        case 'main':
-                            env.ENVIRONMENT = 'prod'
-                            break
-                        case 'qa':
-                            env.ENVIRONMENT = 'qa'
-                            break
-                        case 'staging':
-                            env.ENVIRONMENT = 'staging'
-                            break
-                        default:
-                            env.ENVIRONMENT = 'dev'
-                            break
+        // 1️⃣ Detectar entorno desde Api/.env
+        stage('Leer entorno desde Api/.env') {
+            steps {
+                dir('Web') {  // carpeta donde está tu API
+                    script {
+                        def envValue = powershell(
+                            script: "(Get-Content .env | Where-Object { \$_ -match '^ENVIRONMENT=' }) -replace '^ENVIRONMENT=', ''",
+                            returnStdout: true
+                        ).trim()
+
+                        if (!envValue) {
+                            error "❌ No se encontró ENVIRONMENT en Web/.env"
+                        }
+
+                        env.ENVIRONMENT = envValue
+                        env.ENV_DIR = "environments/${env.ENVIRONMENT}"
+                        env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
+                        env.ENV_FILE = "${env.ENV_DIR}/.env"
+                        env.DB_COMPOSE_FILE = "DB/docker-compose.yml"
+
+                        echo """
+                        ✅ Entorno detectado: ${env.ENVIRONMENT}
+                        📄 Compose API: ${env.COMPOSE_FILE}
+                        📁 Env file: ${env.ENV_FILE}
+                        🗄️ Compose DB: ${env.DB_COMPOSE_FILE}
+                        """
                     }
-
-                    env.ENV_DIR = "environments/${env.ENVIRONMENT}"
-                    env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
-                    env.ENV_FILE = "${env.ENV_DIR}/.env"
-                    env.DB_COMPOSE_FILE = "DB/docker-compose.yml" 
-
-                    echo "✅ Rama detectada: ${branch}"
-                    echo "📦 Entorno asignado: ${env.ENVIRONMENT}"
-                    echo "📄 docker-compose API: ${env.COMPOSE_FILE}"
-                    echo "📁 archivo .env: ${env.ENV_FILE}"
-                    echo "🗄️ docker-compose DB: ${env.DB_COMPOSE_FILE}"
                 }
             }
         }
 
-        // ===============================
-        // 2️⃣ Restaurar dependencias .NET
-        // ===============================
-        stage('Restaurar dependencias .NET 8') {
+        // 2️⃣ Restaurar dependencias
+        stage('Restaurar dependencias .NET') {
             steps {
                 dir('Web') {
-                    echo "📦 Restaurando dependencias..."
-                    bat 'dotnet restore'
+                    bat '''
+                        echo 🔧 Restaurando dependencias .NET...
+                        dotnet restore
+                    '''
                 }
             }
         }
 
-        // ===============================
-        // 3️⃣ Compilar proyecto .NET
-        // ===============================
-        stage('Compilar proyecto .NET 8') {
+        // 3️⃣ Compilar proyecto
+        stage('Compilar proyecto .NET') {
             steps {
                 dir('Web') {
-                    echo "⚙️ Compilando proyecto..."
-                    bat 'dotnet build --configuration Release'
+                    bat 'dotnet build --configuration Release --no-restore'
                 }
             }
         }
 
-        // ===============================
-        // 4️⃣ Levantar red y contenedores (DB + API)
-        // ===============================
-       stage('Levantar contenedores') {
+        // 4️⃣ Preparar red y levantar bases de datos
+        stage('Preparar red y base de datos') {
             steps {
-                echo "🗄️ Levantando red y contenedores para ${env.ENVIRONMENT}..."
                 bat """
-                    docker network create multas_network || echo "🔹 Red multas_network ya existe"
-                    docker compose -f DB/docker-compose.yml -f ${env.COMPOSE_FILE} up -d --build
+                    echo 🌐 Creando red externa compartida (si no existe)...
+                    docker network create multas_network || echo "🔹 Red existente"
+
+                    echo 🗄️ Levantando bases de datos SQL Server...
+                    docker compose -f ${env.DB_COMPOSE_FILE} up -d
                 """
             }
         }
 
+        // 5️⃣ Desplegar API
+        stage('Desplegar API') {
+            steps {
+                bat """
+                    echo 🚀 Desplegando API (${env.ENVIRONMENT})...
+                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                """
+            }
+        }
 
-        // ===============================
-        // 5️⃣ Verificar contenedores activos
-        // ===============================
+        // 6️⃣ Verificar contenedores
         stage('Verificar contenedores activos') {
             steps {
-                echo "🐳 Contenedores activos actualmente:"
                 bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
             }
         }
@@ -94,7 +94,7 @@ pipeline {
 
     post {
         success {
-            echo "🎉 Despliegue exitoso en ${env.ENVIRONMENT}"
+            echo "🎉 Despliegue completado correctamente para ${env.ENVIRONMENT}"
         }
         failure {
             echo "💥 Error durante el despliegue en ${env.ENVIRONMENT}"
