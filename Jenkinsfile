@@ -71,35 +71,20 @@ pipeline {
         }
 
         // ===============================
-        // 4️⃣ Levantar bases de datos (PostgreSQL)
+        // 4️⃣ Levantar red y contenedores (DB + API)
         // ===============================
-        stage('Preparar red y bases de datos') {
+        stage('Levantar contenedores') {
             steps {
-                echo "🗄️ Levantando bases de datos (Postgres)..."
+                echo "🗄️ Levantando red y contenedores para ${env.ENVIRONMENT}..."
                 bat """
                     docker network create multas_network || echo "🔹 Red multas_network ya existe"
-                    docker compose -f ${env.DB_COMPOSE_FILE} up -d
+                    docker compose -f ${env.DB_COMPOSE_FILE} -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
                 """
             }
         }
 
         // ===============================
-        // 5️⃣ Desplegar API + SQL Server
-        // ===============================
-        stage('Desplegar entorno') {
-            steps {
-                script {
-                    echo "🚀 Desplegando API + SQL Server en entorno ${env.ENVIRONMENT}..."
-                    bat """
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
-                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                    """
-                }
-            }
-        }
-
-        // ===============================
-        // 6️⃣ Verificar contenedores activos
+        // 5️⃣ Verificar contenedores activos
         // ===============================
         stage('Verificar contenedores activos') {
             steps {
