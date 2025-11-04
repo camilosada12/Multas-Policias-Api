@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-
   multas-api-prod:
     build:
       context: ../../
@@ -18,9 +15,6 @@ services:
       - multas_network
     labels:
       - com.multas.environment=prod
-
-volumes:
-  sqlserver_data_prod:
 
 networks:
   multas_network:

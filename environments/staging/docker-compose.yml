@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   multas-api-staging:
     build:
@@ -17,9 +15,6 @@ services:
       - multas_network
     labels:
       - com.multas.environment=staging
-
-volumes:
-  sqlserver_data_staging:
 
 networks:
   multas_network:

@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-
   multas-api-qa:
     build:
       context: ../../
@@ -18,9 +15,6 @@ services:
       - multas_network
     labels:
       - com.multas.environment=qa
-
-volumes:
-  sqlserver_data_qa:
 
 networks:
   multas_network:

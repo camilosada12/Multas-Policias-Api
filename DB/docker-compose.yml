@@ -1,74 +1,69 @@
-# Eliminé 'version' porque ya no es necesario en Compose moderno
 services:
-  # PostgreSQL - DEV
-  multas-postgres-dev:
-    image: postgres:16
-    container_name: multas-postgres-dev
+  # SQL Server - DEV
+  sqlserverBack-dev:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverBack-dev
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: multas_dev
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SQLSERVER_PASSWORD}
     ports:
-      - "5432:5432"
+      - "1434:1433"
     volumes:
-      - pgdata_dev:/var/lib/postgresql/data
+      - sqlserver_data_dev:/var/opt/mssql
     networks:
       - multas_network
 
-  # PostgreSQL - QA
-  multas-postgres-qa:
-    image: postgres:16
-    container_name: multas-postgres-qa
+  # SQL Server - QA
+  sqlserverBack-qa:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverBack-qa
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: multas_qa
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SQLSERVER_PASSWORD}
     ports:
-      - "5433:5432"
+      - "1435:1433"
     volumes:
-      - pgdata_qa:/var/lib/postgresql/data
+      - sqlserver_data_qa:/var/opt/mssql
     networks:
       - multas_network
 
-  # PostgreSQL - STAGING
-  multas-postgres-staging:
-    image: postgres:16
-    container_name: multas-postgres-staging
+  # SQL Server - STAGING
+  sqlserverBack-staging:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverBack-staging
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: multas_staging
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SQLSERVER_PASSWORD}
     ports:
-      - "5434:5432"
+      - "1436:1433"
     volumes:
-      - pgdata_staging:/var/lib/postgresql/data
+      - sqlserver_data_staging:/var/opt/mssql
     networks:
       - multas_network
 
-  # PostgreSQL - PROD
-  multas-postgres-prod:
-    image: postgres:16
-    container_name: multas-postgres-prod
+  # SQL Server - PROD
+  sqlserverBack-prod:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverBack-prod
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: multas_prod
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SQLSERVER_PASSWORD}
     ports:
-      - "5435:5432"
+      - "1437:1433"
     volumes:
-      - pgdata_prod:/var/lib/postgresql/data
+      - sqlserver_data_prod:/var/opt/mssql
     networks:
       - multas_network
 
 volumes:
-  pgdata_dev:
-  pgdata_qa:
-  pgdata_staging:
-  pgdata_prod:
+  sqlserver_data_dev:
+  sqlserver_data_qa:
+  sqlserver_data_staging:
+  sqlserver_data_prod:
 
 networks:
   multas_network:
