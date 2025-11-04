@@ -8,83 +8,99 @@ pipeline {
     }
 
     stages {
-        stage('Leer entorno desde Api/.env') {
+        // =======================================================
+        // 1️⃣ Detectar entorno por rama
+        // =======================================================
+        stage('Detectar entorno por rama') {
             steps {
-                dir('Web') {  // carpeta donde está tu API
-                    script {
-                        def envValue = powershell(
-                            script: "(Get-Content .env | Where-Object { \$_ -match '^ENVIRONMENT=' }) -replace '^ENVIRONMENT=', ''",
-                            returnStdout: true
-                        ).trim()
+                script {
+                    echo "🔍 Detectando entorno según la rama..."
+                    def branch = env.BRANCH_NAME?.toLowerCase() ?: "develop"
 
-                        if (!envValue) {
-                            error "❌ No se encontró ENVIRONMENT en Web/.env"
-                        }
-
-                        env.ENVIRONMENT = envValue
-                        env.ENV_DIR = "environments/${env.ENVIRONMENT}"
-                        env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
-                        env.ENV_FILE = "${env.ENV_DIR}/.env"
-                        env.DB_COMPOSE_FILE = "DB/docker-compose.yml"
-
-                        echo """
-                        ✅ Entorno detectado: ${env.ENVIRONMENT}
-                        📄 Compose API: ${env.COMPOSE_FILE}
-                        📁 Env file: ${env.ENV_FILE}
-                        🗄️ Compose DB: ${env.DB_COMPOSE_FILE}
-                        """
+                    switch (branch) {
+                        case 'main':
+                            env.ENVIRONMENT = 'prod'
+                            break
+                        case 'qa':
+                            env.ENVIRONMENT = 'qa'
+                            break
+                        case 'staging':
+                            env.ENVIRONMENT = 'staging'
+                            break
+                        default:
+                            env.ENVIRONMENT = 'dev'
+                            break
                     }
+
+                    env.ENV_DIR = "environments/${env.ENVIRONMENT}"
+                    env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
+                    env.ENV_FILE = "${env.ENV_DIR}/.env"
+                    env.DB_COMPOSE_FILE = "DB/docker-compose.yml"
+
+                    echo "✅ Rama detectada: ${branch}"
+                    echo "📦 Entorno asignado: ${env.ENVIRONMENT}"
+                    echo "📄 docker-compose API: ${env.COMPOSE_FILE}"
+                    echo "📁 archivo .env: ${env.ENV_FILE}"
+                    echo "🗄️ docker-compose DB: ${env.DB_COMPOSE_FILE}"
                 }
             }
         }
 
-        // 2️⃣ Restaurar dependencias
-        stage('Restaurar dependencias .NET') {
+        // =======================================================
+        // 2️⃣ Restaurar dependencias .NET
+        // =======================================================
+        stage('Restaurar dependencias .NET 8') {
             steps {
                 dir('Web') {
-                    bat '''
-                        echo 🔧 Restaurando dependencias .NET...
-                        dotnet restore
-                    '''
+                    echo "📦 Restaurando dependencias..."
+                    bat 'dotnet restore'
                 }
             }
         }
 
-        // 3️⃣ Compilar proyecto
-        stage('Compilar proyecto .NET') {
+        // =======================================================
+        // 3️⃣ Compilar proyecto .NET
+        // =======================================================
+        stage('Compilar proyecto .NET 8') {
             steps {
                 dir('Web') {
-                    bat 'dotnet build --configuration Release --no-restore'
+                    echo "⚙️ Compilando proyecto..."
+                    bat 'dotnet build --configuration Release'
                 }
             }
         }
 
-        // 4️⃣ Preparar red y levantar bases de datos
-        stage('Preparar red y base de datos') {
+        // =======================================================
+        // 4️⃣ Preparar red y levantar base de datos
+        // =======================================================
+        stage('Levantar base de datos') {
             steps {
+                echo "🗄️ Levantando red y contenedor de base de datos..."
                 bat """
-                    echo 🌐 Creando red externa compartida (si no existe)...
-                    docker network create multas_network || echo "🔹 Red existente"
-
-                    echo 🗄️ Levantando bases de datos SQL Server...
+                    docker network create multas_network || echo "🔹 Red multas_network ya existe"
                     docker compose -f ${env.DB_COMPOSE_FILE} up -d
                 """
             }
         }
 
+        // =======================================================
         // 5️⃣ Desplegar API
+        // =======================================================
         stage('Desplegar API') {
             steps {
+                echo "🚀 Desplegando API para entorno ${env.ENVIRONMENT}..."
                 bat """
-                    echo 🚀 Desplegando API (${env.ENVIRONMENT})...
                     docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
                 """
             }
         }
 
-        // 6️⃣ Verificar contenedores
+        // =======================================================
+        // 6️⃣ Verificar contenedores activos
+        // =======================================================
         stage('Verificar contenedores activos') {
             steps {
+                echo "🐳 Contenedores activos actualmente:"
                 bat 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
             }
         }
@@ -92,7 +108,7 @@ pipeline {
 
     post {
         success {
-            echo "🎉 Despliegue completado correctamente para ${env.ENVIRONMENT}"
+            echo "🎉 Despliegue exitoso en ${env.ENVIRONMENT}"
         }
         failure {
             echo "💥 Error durante el despliegue en ${env.ENVIRONMENT}"
