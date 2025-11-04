@@ -1,21 +1,6 @@
 version: '3.8'
 
 services:
-  sqlserverBack-prod:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserverBack-prod
-    restart: always
-    env_file:
-      - .env
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${SQLSERVER_PASSWORD}
-    ports:
-      - "1437:1433"
-    volumes:
-      - sqlserver_data_prod:/var/opt/mssql
-    networks:
-      - network_prod
 
   multas-api-prod:
     build:
@@ -30,7 +15,7 @@ services:
     ports:
       - "5103:8080"
     networks:
-      - network_prod
+      - multas_network
     labels:
       - com.multas.environment=prod
 
@@ -38,5 +23,5 @@ volumes:
   sqlserver_data_prod:
 
 networks:
-  network_prod:
-    driver: bridge
+  multas_network:
+    external: true

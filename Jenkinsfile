@@ -8,6 +8,9 @@ pipeline {
     }
 
     stages {
+        // ===============================
+        // 1️⃣ Detectar entorno por rama
+        // ===============================
         stage('Detectar entorno por rama') {
             steps {
                 script {
@@ -32,15 +35,20 @@ pipeline {
                     env.ENV_DIR = "environments/${env.ENVIRONMENT}"
                     env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
                     env.ENV_FILE = "${env.ENV_DIR}/.env"
+                    env.DB_COMPOSE_FILE = "docker-compose.db.yml" // Docker Compose de PostgreSQL
 
                     echo "✅ Rama detectada: ${branch}"
                     echo "📦 Entorno asignado: ${env.ENVIRONMENT}"
-                    echo "📄 docker-compose: ${env.COMPOSE_FILE}"
+                    echo "📄 docker-compose API: ${env.COMPOSE_FILE}"
                     echo "📁 archivo .env: ${env.ENV_FILE}"
+                    echo "🗄️ docker-compose DB: ${env.DB_COMPOSE_FILE}"
                 }
             }
         }
 
+        // ===============================
+        // 2️⃣ Restaurar dependencias .NET
+        // ===============================
         stage('Restaurar dependencias .NET 8') {
             steps {
                 dir('Web') {
@@ -50,6 +58,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 3️⃣ Compilar proyecto .NET
+        // ===============================
         stage('Compilar proyecto .NET 8') {
             steps {
                 dir('Web') {
@@ -59,10 +70,26 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 4️⃣ Levantar bases de datos (PostgreSQL)
+        // ===============================
+        stage('Preparar red y bases de datos') {
+            steps {
+                echo "🗄️ Levantando bases de datos (Postgres)..."
+                bat """
+                    docker network create multas_network || echo "🔹 Red multas_network ya existe"
+                    docker compose -f ${env.DB_COMPOSE_FILE} up -d
+                """
+            }
+        }
+
+        // ===============================
+        // 5️⃣ Desplegar API + SQL Server
+        // ===============================
         stage('Desplegar entorno') {
             steps {
                 script {
-                    echo "🚀 Desplegando entorno ${env.ENVIRONMENT}..."
+                    echo "🚀 Desplegando API + SQL Server en entorno ${env.ENVIRONMENT}..."
                     bat """
                         docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} down || exit /b 0
                         docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
@@ -71,6 +98,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 6️⃣ Verificar contenedores activos
+        // ===============================
         stage('Verificar contenedores activos') {
             steps {
                 echo "🐳 Contenedores activos actualmente:"
@@ -81,10 +111,10 @@ pipeline {
 
     post {
         success {
-            echo "🎉 despliegue exitoso en ${env.ENVIRONMENT}"
+            echo "🎉 Despliegue exitoso en ${env.ENVIRONMENT}"
         }
         failure {
-            echo "💥 error durante el despliegue en ${env.ENVIRONMENT}"
+            echo "💥 Error durante el despliegue en ${env.ENVIRONMENT}"
         }
     }
 }

@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  # PostgreSQL - DEV
+  multas-postgres-dev:
+    image: postgres:16
+    container_name: multas-postgres-dev
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: multas_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - multas_network
+
+  # PostgreSQL - QA
+  multas-postgres-qa:
+    image: postgres:16
+    container_name: multas-postgres-qa
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: multas_qa
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_qa:/var/lib/postgresql/data
+    networks:
+      - multas_network
+
+  # PostgreSQL - STAGING
+  multas-postgres-staging:
+    image: postgres:16
+    container_name: multas-postgres-staging
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: multas_staging
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_staging:/var/lib/postgresql/data
+    networks:
+      - multas_network
+
+  # PostgreSQL - PROD
+  multas-postgres-prod:
+    image: postgres:16
+    container_name: multas-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: multas_prod
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - multas_network
+
+volumes:
+  pgdata_dev:
+  pgdata_qa:
+  pgdata_staging:
+  pgdata_prod:
+
+networks:
+  multas_network:
+    name: multas_network
+    driver: bridge
