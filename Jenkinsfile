@@ -35,7 +35,7 @@ pipeline {
                     env.ENV_DIR = "environments/${env.ENVIRONMENT}"
                     env.COMPOSE_FILE = "${env.ENV_DIR}/docker-compose.yml"
                     env.ENV_FILE = "${env.ENV_DIR}/.env"
-                    env.DB_COMPOSE_FILE = "docker-compose.db.yml" // Docker Compose de PostgreSQL
+                    env.DB_COMPOSE_FILE = "DB/docker-compose.yml" 
 
                     echo "✅ Rama detectada: ${branch}"
                     echo "📦 Entorno asignado: ${env.ENVIRONMENT}"
