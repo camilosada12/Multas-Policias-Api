@@ -1,16 +1,19 @@
 version: '3.8'
 
 services:
-  postgresBack-staging:
-    image: postgres:16
-    container_name: postgresBack-staging
+  sqlserverBack-staging:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverBack-staging
     restart: always
     env_file:
       - .env
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SQLSERVER_PASSWORD}
     ports:
-      - "5436:5432"
+      - "1436:1433"
     volumes:
-      - postgres_data_staging:/var/lib/postgresql/data
+      - sqlserver_data_staging:/var/opt/mssql
     networks:
       - network_staging
 
@@ -21,7 +24,7 @@ services:
     container_name: multas-api-staging
     restart: always
     depends_on:
-      - postgresBack-staging
+      - sqlserverBack-staging
     env_file:
       - .env
     ports:
@@ -32,7 +35,7 @@ services:
       - com.multas.environment=staging
 
 volumes:
-  postgres_data_staging:
+  sqlserver_data_staging:
 
 networks:
   network_staging:

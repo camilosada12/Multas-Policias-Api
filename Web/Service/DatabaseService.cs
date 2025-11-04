@@ -1,6 +1,6 @@
 ﻿using Entity.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure; // 👈 importante
 
 namespace Web.Service
 {
@@ -12,20 +12,9 @@ namespace Web.Service
             var pg = config.GetConnectionString("Postgres");
             var my = config.GetConnectionString("MySql");
 
-            // 🟢 PostgreSQL es la base de datos principal
-            if (!string.IsNullOrWhiteSpace(pg))
-            {
-                services.AddDbContext<PostgresDbContext>(opt =>
-                    opt.UseNpgsql(pg, n =>
-                    {
-                        n.MigrationsAssembly(typeof(PostgresDbContext).Assembly.FullName);
-                        n.EnableRetryOnFailure();
-                        n.CommandTimeout(60);
-                    })
-                );
-            }
+            // Registrar AuditManager si lo usas en ApplicationDbContext
+            // services.AddScoped<AuditService>();
 
-            // 🔸 (Opcional) SQL Server
             if (!string.IsNullOrWhiteSpace(sql))
             {
                 services.AddDbContext<ApplicationDbContext>(opt =>
@@ -38,14 +27,33 @@ namespace Web.Service
                 );
             }
 
-            // 🔸 (Opcional) MySQL
+            if (!string.IsNullOrWhiteSpace(pg))
+            {
+                services.AddDbContext<PostgresDbContext>(opt =>
+                    opt.UseNpgsql(pg, n =>
+                    {
+                        n.MigrationsAssembly(typeof(PostgresDbContext).Assembly.FullName);
+                        n.EnableRetryOnFailure();
+                        n.CommandTimeout(60);
+                    })
+                );
+            }
+
             if (!string.IsNullOrWhiteSpace(my))
             {
                 services.AddDbContext<MySqlApplicationDbContext>(opt =>
                     opt.UseMySql(my, ServerVersion.AutoDetect(my), m =>
                     {
                         m.MigrationsAssembly(typeof(MySqlApplicationDbContext).Assembly.FullName);
+
+                        // 👇 Ignorar schemas (MySQL no soporta schemas)
                         m.SchemaBehavior(MySqlSchemaBehavior.Ignore);
+
+                        // Registrar AuditDbContext si es necesario, con proveedor fijo o dinámico
+                        // services.AddDbContext<AuditDbContext>(options =>
+                        //     options.UseSqlServer(configuration.GetConnectionString("Audit")));
+
+                        // Habilitar traducciones de comparación de strings
                         m.EnableStringComparisonTranslations();
                     })
                     .EnableDetailedErrors()
