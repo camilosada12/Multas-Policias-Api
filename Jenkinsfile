@@ -1,5 +1,3 @@
-// lee el valor de ASPNETCORE_ENVIRONMENT del archivo .env
-// lee el valor de ASPNETCORE_ENVIRONMENT del archivo .env
 pipeline {
     agent any
 
