@@ -1,5 +1,4 @@
-version: "3.9"
-
+# Eliminé 'version' porque ya no es necesario en Compose moderno
 services:
   # PostgreSQL - DEV
   multas-postgres-dev:
@@ -73,5 +72,4 @@ volumes:
 
 networks:
   multas_network:
-    name: multas_network
-    driver: bridge
+    external: true
