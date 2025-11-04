@@ -70,15 +70,16 @@ pipeline {
         // ===============================
         // 4️⃣ Levantar red y contenedores (DB + API)
         // ===============================
-        stage('Levantar contenedores') {
+       stage('Levantar contenedores') {
             steps {
                 echo "🗄️ Levantando red y contenedores para ${env.ENVIRONMENT}..."
                 bat """
                     docker network create multas_network || echo "🔹 Red multas_network ya existe"
-                    docker compose -f ${env.DB_COMPOSE_FILE} -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                    docker compose -f DB/docker-compose.yml -f ${env.COMPOSE_FILE} up -d --build
                 """
             }
         }
+
 
         // ===============================
         // 5️⃣ Verificar contenedores activos
