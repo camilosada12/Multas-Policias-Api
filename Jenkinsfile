@@ -66,17 +66,33 @@ pipeline {
         // =======================================================
         // 4️⃣ levantar contenedores
         // =======================================================
-        stage('Levantar contenedores') {
+       stage('Levantar contenedores') {
             steps {
                 echo "🗄️ levantando red y contenedores para ${env.ENVIRONMENT}..."
-                sh """
-                    cd ${WORKSPACE_DIR}
-                    docker network create multas_network || echo "🔹 red multas_network ya existe"
-                    docker compose -f DB/docker-compose.yml --env-file ${env.ENV_FILE} up -d
-                    docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
-                """
+
+                script {
+                    def db_service = "sqlserverBack-${env.ENVIRONMENT}"
+
+                    sh """
+                        cd ${WORKSPACE_DIR}
+
+                        # crear red si no existe
+                        docker network create multas_network || echo "🔹 red multas_network ya existe"
+
+                        # detener cualquier contenedor previo del mismo entorno
+                        docker compose -f DB/docker-compose.yml stop ${db_service} || true
+                        docker compose -f DB/docker-compose.yml rm -f ${db_service} || true
+
+                        # levantar solo la base de datos correspondiente al entorno actual
+                        docker compose -f DB/docker-compose.yml --env-file ${env.ENV_FILE} up -d ${db_service}
+
+                        # levantar la api del entorno actual
+                        docker compose -f ${env.COMPOSE_FILE} --env-file ${env.ENV_FILE} up -d --build
+                    """
+                }
             }
         }
+
 
         // =======================================================
         // 5️⃣ desplegar api
