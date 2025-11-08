@@ -52,15 +52,11 @@ pipeline {
         }
 
         // =======================================================
-        // 3️⃣ limpiar y compilar proyecto .net
+        // 3️⃣ compilar proyecto .net
         // =======================================================
         stage('Compilar proyecto .NET 8') {
             steps {
                 dir("${WORKSPACE_DIR}/Web") {
-                    echo "🧹 limpiando archivos previos..."
-                    // limpia los binarios y referencias bloqueadas
-                    sh 'dotnet clean'
-                    sh 'find ../Entity -type d \\( -name "bin" -o -name "obj" \\) -exec rm -rf {} +'
                     echo "⚙️ compilando proyecto..."
                     sh 'dotnet build --configuration Release'
                 }
